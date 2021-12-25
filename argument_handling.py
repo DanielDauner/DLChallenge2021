@@ -16,8 +16,16 @@ def parse_args():
                         help='location of the noisy test images in numpy format', )
     parser.add_argument('--predicted_test_label_save_dir',
                         type=str,
-                        default='./predictions',
+                        default=None,
                         help='dir of the predicted labels named kaggle_prediction+time_stamp+.csv ', )
+    parser.add_argument('--model_path',
+                        type=str,
+                        default="model/model.pth",
+                        help='path to a output model dict dir', )
+    parser.add_argument('--pretrain_path',
+                        type=str,
+                        default=None,
+                        help='path to a pretrained model', )
     parser.add_argument('--batch_size',
                         type=int,
                         default=64)

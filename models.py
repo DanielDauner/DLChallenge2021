@@ -8,7 +8,6 @@ class SimpleAutoencoder(nn.Module):
         self.encoder = nn.Sequential(
             nn.Conv2d(3, 32, 3, stride=2, padding=1),
             nn.ReLU(),
-
             nn.Conv2d(32, 64, 3, stride=2, padding=1),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, stride=2, padding=1),
