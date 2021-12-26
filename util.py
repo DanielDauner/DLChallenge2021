@@ -45,6 +45,9 @@ class VisualizeTraining():
 
         fig.savefig(self.out_dir)
 
+        # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+        # TODO: destroy plot after saving. Live plot could be used aswell.
+
 
 
         

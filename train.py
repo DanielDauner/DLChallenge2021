@@ -32,8 +32,10 @@ def main():
     # device = "cpu"
     print(f"Using {device} device")
 
-    model = models.SimpleAutoencoder().to(device)
+    #model = models.SimpleAutoencoder().to(device)
+    model = models.UNet().to(device)
     
+    # TODO: enable pretraining
     #if args.pretrain_path:
 
     print(model)
@@ -41,12 +43,16 @@ def main():
     # optimizer = torch.optim.SGD(model.parameters(), learning_rate,momentum=0.9)
 
     Visualize = VisualizeTraining("training.png", epochs)
+   
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}")
         print("-" * 50)
-
+        start = time.time()
         train_loss = train_one_epoch(train_dataloader, model, mse_loss, optimizer, device)
+        
+        print("Time per Epoch: ", time.time()-start)
+
         val_loss = validate(val_dataloader, model, mse_loss, device)
         Visualize.update(train_loss, val_loss, epoch)
 

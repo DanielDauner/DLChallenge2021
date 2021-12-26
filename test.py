@@ -29,7 +29,8 @@ def main():
     # device = "cpu"
     print(f"Using {device} device")
 
-    model = models.SimpleAutoencoder().to(device)
+    #model = models.SimpleAutoencoder().to(device)
+    model = models.UNet().to(device)
     model.load_state_dict(torch.load(args.model_path))
     print(f"Sucesfully loaded model from {args.model_path}") 
 
