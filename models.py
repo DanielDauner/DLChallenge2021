@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 def conv(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding),
@@ -126,7 +125,7 @@ class UNet(nn.Module):
         conv1_up = self.up1(dconv_up2)
 
         out = self.conv_last(conv1_up)
-        return  out
+        return  torch.clip(out, min=0, max=255)
 
 
 class SimpleAutoencoder(nn.Module):
