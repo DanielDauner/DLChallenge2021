@@ -14,6 +14,10 @@ def parse_args():
                         type=str,
                         default='data/test_noisy_100.npy',
                         help='location of the noisy test images in numpy format', )
+    parser.add_argument('--background_path',
+                        type=str,
+                        default='data/train_background.npy',
+                        help='location of the noisy background images in numpy format', )
     parser.add_argument('--predicted_test_label_save_dir',
                         type=str,
                         default="./predictions",
@@ -29,12 +33,12 @@ def parse_args():
     parser.add_argument('--batch_size',
                         type=int,
                         default=64) # 64
-    parser.add_argument('--validation_set_size',
-                        type=int,
-                        default=1000) 
+    parser.add_argument('--validation_fraction',
+                        type=float,
+                        default=0.1) 
     parser.add_argument('--learning_rate',
                         type=float,
-                        default=0.0005)
+                        default=0.001)
     parser.add_argument('--bootstrap',
                         type=float,
                         default=1.0)

@@ -18,7 +18,7 @@ def main():
 
     args = argument_handling.parse_args()
     train_dataloader, val_dataloader, test_dataloader = \
-        data_handling.get_dataloaders(args.batch_size,args.validation_set_size,
+        data_handling.get_dataloaders(args.batch_size,args.validation_fraction,
                                       args.train_data_path,args.train_labels_path,args.test_data_path)
     np.random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
@@ -34,13 +34,15 @@ def main():
 
     #model = models.SimpleAutoencoder().to(device)
     model = models.UNet().to(device)
+    #model.load_state_dict(torch.load("./model/unet.pth"))
     
     # TODO: enable pretraining
     #if args.pretrain_path:
 
     print(model)
     optimizer = torch.optim.Adam(model.parameters(), learning_rate)
-    # optimizer = torch.optim.SGD(model.parameters(), learning_rate,momentum=0.9)
+    #optimizer = torch.optim.SGD(model.parameters(), learning_rate, momentum=0.9)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [100,200,300], gamma=0.1)
 
     Visualize = VisualizeTraining("training.png", epochs)
    
@@ -58,6 +60,7 @@ def main():
 
         sys.stdout.flush()
         sys.stderr.flush()
+        lr_scheduler.step()
     
     if args.model_path:
         torch.save(model.state_dict(), args.model_path)

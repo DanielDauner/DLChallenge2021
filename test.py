@@ -17,7 +17,7 @@ def main():
 
     args = argument_handling.parse_args()
     train_dataloader, val_dataloader, test_dataloader = \
-        data_handling.get_dataloaders(args.batch_size,args.validation_set_size,
+        data_handling.get_dataloaders(args.batch_size,args.validation_fraction,
                                       args.train_data_path,args.train_labels_path,args.test_data_path)
 
     
@@ -30,7 +30,7 @@ def main():
     print(f"Using {device} device")
 
     #model = models.SimpleAutoencoder().to(device)
-    model = models.UNet().to(device)
+    model = models.UNet(n_class=1).to(device)
     model.load_state_dict(torch.load(args.model_path))
     print(f"Sucesfully loaded model from {args.model_path}") 
 
