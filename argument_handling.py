@@ -38,7 +38,7 @@ def parse_args():
                         default=0.1) 
     parser.add_argument('--learning_rate',
                         type=float,
-                        default=0.001)
+                        default=0.0005)
     parser.add_argument('--bootstrap',
                         type=float,
                         default=1.0)

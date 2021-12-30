@@ -34,7 +34,7 @@ def main():
 
     #model = models.SimpleAutoencoder().to(device)
     model = models.UNet().to(device)
-    #model.load_state_dict(torch.load("./model/unet.pth"))
+    model.load_state_dict(torch.load("./model/unet.pth"))
     
     # TODO: enable pretraining
     #if args.pretrain_path:
@@ -42,7 +42,7 @@ def main():
     print(model)
     optimizer = torch.optim.Adam(model.parameters(), learning_rate)
     #optimizer = torch.optim.SGD(model.parameters(), learning_rate, momentum=0.9)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [50,150,250], gamma=0.1)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [], gamma=0.1)
 
     Visualize = VisualizeTraining("training.png", epochs)
    
@@ -80,7 +80,8 @@ def train_one_epoch(dataloader, model, loss_fn, optimizer, device):
         pred = model(X)
         pred_flat = torch.flatten(pred, 1)
         
-        loss = loss_fn(pred_flat, Y_flat) # to be consistent with the kaggle loss.
+        loss = loss_fn(pred_flat*255, Y_flat*255) # to be consistent with the kaggle loss.
+        #print(pred_flat)
         epoch_loss += loss
         optimizer.zero_grad()
         loss.backward()
@@ -102,7 +103,7 @@ def validate(val_dataloader, model, loss_fn, device):
             pred = model(X)
             pred_flat = torch.flatten(pred, 1)
 
-            val_loss += loss_fn(pred_flat, Y_flat).item()
+            val_loss += loss_fn(pred_flat*255, Y_flat*255).item()
     val_loss /= num_batches
     print(f"Validation loss: {val_loss:>7f} ")
     print("-" * 50)

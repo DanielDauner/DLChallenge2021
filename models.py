@@ -105,8 +105,7 @@ class UNet(nn.Module):
         self.conv_last = nn.Conv2d(64, n_class, 1)
         
         
-    def forward(self, x):
-        
+    def forward(self, x, return_feature=False):
         conv1 = self.dconv_down1(x)
         conv2 = self.dconv_down2(conv1)
         conv3 = self.dconv_down3(conv2)
@@ -125,39 +124,41 @@ class UNet(nn.Module):
         conv1_up = self.up1(dconv_up2)
 
         out = self.conv_last(conv1_up)
-        return  torch.clip(out, min=0, max=255)
+        if return_feature:
+            return torch.sigmoid(out), conv4
+        else:
+            return torch.sigmoid(out)
 
 
-class SimpleAutoencoder(nn.Module):
 
-    def __init__(self):
-        super(SimpleAutoencoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 32, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 3, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, stride=2, padding=1),
-            nn.ReLU(),
+
+class Discriminator(nn.Module):
+
+    def __init__(self, n_class=3):
+        super().__init__()
+                
+        self.dconv_down1 = conv(3, 32, kernel_size=5, stride=2)
+        self.dconv_down2 = conv(32, 64, kernel_size=5, stride=2)
+        self.dconv_down3 = conv(64, 128, kernel_size=5, stride=2)
+        self.dconv_down4 = conv(128, 256, kernel_size=5, stride=2)    
+
+        self.classfier = nn.Sequential(
+            torch.nn.Flatten(),
+            torch.nn.Linear(256*25, 1024),
+            torch.nn.Linear(1024, 1),
+            torch.nn.Sigmoid()
         )
 
-        self.fc1 = nn.Linear(64 * 12 * 12, 128)
-        self.fc2 = nn.Linear(128, 64 * 12 * 12)
-
-        self.decoder = nn.Sequential(
-            torch.nn.ConvTranspose2d(64, 64, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            torch.nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1),
-            nn.ReLU(),
-            torch.nn.ConvTranspose2d(32, 3, 3, stride=2, padding=1, output_padding=1),
-            nn.Sigmoid()
-        )
-
+        
     def forward(self, x):
-        out = self.encoder(x)
-        out = out.view(-1, 64 * 12 * 12 )
-        out = self.fc1(out)
-        out = self.fc2(out)
-        out = out.view(-1, 64,12,12)
-        out = self.decoder(out)
-        return out
+        
+        conv1 = self.dconv_down1(x)
+        conv2 = self.dconv_down2(conv1)
+        conv3 = self.dconv_down3(conv2)
+        conv4 = self.dconv_down4(conv3)
+
+        return  self.classfier(conv4)
+
+
+
+    

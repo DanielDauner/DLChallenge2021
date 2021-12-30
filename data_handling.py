@@ -64,11 +64,16 @@ class AugmentationDataset(Dataset):
         augmentation = self.aug_all.to_deterministic()
         x, y = augmentation.augment_image(x), augmentation.augment_image(y)
 
+        if np.random.uniform(0, 1) < 0.3:
+            x = delete_random_patches(x)
+
         # apply second augmentation only to image
         x, y = self.aug_data.augment_image(x), self.aug_data.augment_image(y)
 
+        maxi = np.max(x)
+        if maxi > 255:
+            print("err ",maxi)
         x, y = transforms.ToTensor()(x), transforms.ToTensor()(y) 
-
 
         return x, y
 
@@ -97,7 +102,9 @@ class TestDataset(Dataset):
         y = self.targets[index].astype(np.uint8)
         x = self.data[index].astype(np.uint8)
 
+
         x, y = transforms.ToTensor()(x), transforms.ToTensor()(y) 
+
 
         return x, y
 
@@ -121,22 +128,22 @@ def get_dataloaders(batch_size,validation_fraction = 0.9, train_data_path = 'dat
 
     # transform_train = transforms.Compose([transforms.ToTensor()])
     augmentation_all = iaa.Sequential([
-                    iaa.Sometimes(0.5, iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)})),
-                    iaa.Sometimes(0.5, iaa.Affine(translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)})),
-                    iaa.Sometimes(0.5, iaa.Affine(rotate=(-90, 90))),
-                    iaa.Sometimes(0.5, iaa.Affine(shear=(-25, 25))),
-                    iaa.Sometimes(0.5, iaa.Fliplr()),
-                    iaa.Sometimes(0.5, iaa.Flipud()),
-                    iaa.Sometimes(0.5, iaa.CropAndPad(percent=(-0.1, 0.1))),
+                    iaa.Sometimes(0.3, iaa.Affine(scale={"x": (0.8, 1.2), "y": (0.8, 1.2)})),
+                    iaa.Sometimes(0.3, iaa.Affine(translate_percent={"x": (-0.1, 0.1), "y": (-0.1, 0.1)})),
+                    iaa.Sometimes(0.3, iaa.Affine(rotate=(-90, 90))),
+                    iaa.Sometimes(0.3, iaa.Affine(shear=(-25, 25))),
+                    iaa.Sometimes(0.3, iaa.Fliplr()),
+                    iaa.Sometimes(0.3, iaa.Flipud()),
+                    iaa.Sometimes(0.3, iaa.CropAndPad(percent=(-0.1, 0.1))),
                     ], random_order=True)
     
 
     augmentation_data = iaa.Sequential([
-                    iaa.Sometimes(0.5,iaa.OneOf([
+                    iaa.Sometimes(0.3,iaa.OneOf([
                         iaa.GaussianBlur((0, 1.5)),
                         iaa.AverageBlur(k=(2, 3)),
                     ])),
-                    iaa.Sometimes(0.5,iaa.OneOf([
+                    iaa.Sometimes(0.3,iaa.OneOf([
                         iaa.Dropout((0.01, 0.1), per_channel=0.5),
                         iaa.CoarseDropout(
                             (0.03, 0.15), size_percent=(0.02, 0.03),
@@ -147,11 +154,11 @@ def get_dataloaders(batch_size,validation_fraction = 0.9, train_data_path = 'dat
                     #         p_replace=(0, 0.5),
                     #         n_segments=(20, 100)
                     #     )),
-                    iaa.Sometimes(0.5,iaa.Invert(0.05, per_channel=True)),
-                    iaa.Sometimes(0.5,iaa.Add((-20, 20), per_channel=0.5)),
-                    iaa.Sometimes(0.5,iaa.Multiply((0.5, 1.5), per_channel=0.5)),
-                    iaa.Sometimes(0.5,iaa.LinearContrast((0.5, 2.0), per_channel=0.5)),
-                    iaa.Sometimes(0.5,iaa.Grayscale(alpha=(0.0, 1.0))),
+                    iaa.Sometimes(0.3,iaa.Invert(0.05, per_channel=True)),
+                    iaa.Sometimes(0.3,iaa.Add((-20, 20), per_channel=0.5)),
+                    iaa.Sometimes(0.3,iaa.Multiply((0.5, 1.5), per_channel=0.5)),
+                    iaa.Sometimes(0.3,iaa.LinearContrast((0.5, 2.0), per_channel=0.5)),
+                    iaa.Sometimes(0.3,iaa.Grayscale(alpha=(0.0, 1.0))),
                     
                     ], random_order=True)
     
