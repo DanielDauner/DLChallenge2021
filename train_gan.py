@@ -109,18 +109,18 @@ def train_one_epoch(dataloader, model_g, model_d, mse_loss, bce_loss, optimizer_
         optimizer_d.step()
 
         # (3) Train model_g on all-fake data
-        _, real_features = model_g(Y,return_feature=True)
+       
         model_g.train()
         model_d.eval()
 
         optimizer_g.zero_grad()
 
         model_g.zero_grad()
-        fake_Y, fake_features = model_g(X,return_feature=True)
+        #_, real_features = model_g(Y,return_feature=True)
+        fake_Y = model_g(X)
         output_d = model_d(fake_Y)
-        err_g = bce_loss(output_d, real_label)\
-            +1000*mse_loss(torch.flatten(fake_Y, 1), torch.flatten(Y, 1))\
-                +mse_loss(torch.flatten(fake_features, 1), torch.flatten(real_features, 1))
+        err_g = 1000*bce_loss(output_d, real_label)\
+            +mse_loss(torch.flatten(255*fake_Y, 1), torch.flatten(255*Y, 1))#+1000*mse_loss(torch.flatten(fake_features, 1), torch.flatten(real_features, 1))
         epoch_loss_g += err_g
         
         err_g.backward()

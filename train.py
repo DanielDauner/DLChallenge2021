@@ -33,8 +33,8 @@ def main():
     print(f"Using {device} device")
 
     #model = models.SimpleAutoencoder().to(device)
-    model = models.UNet().to(device)
-    model.load_state_dict(torch.load("./model/unet.pth"))
+    model = models.BetaUNet(beta=2).to(device)
+    #model.load_state_dict(torch.load("./model/unet.pth"))
     
     # TODO: enable pretraining
     #if args.pretrain_path:
@@ -77,10 +77,12 @@ def train_one_epoch(dataloader, model, loss_fn, optimizer, device):
         X, Y = X.to(device), Y.to(device)
 
         Y_flat = torch.flatten(Y,1)
-        pred = model(X)
+        pred, mu, var = model(X)
         pred_flat = torch.flatten(pred, 1)
         
-        loss = loss_fn(pred_flat*255, Y_flat*255) # to be consistent with the kaggle loss.
+        #loss = loss_fn(pred_flat*255, Y_flat*255) # to be consistent with the kaggle loss.
+
+        loss = model.loss(pred, Y, mu, var)
         #print(pred_flat)
         epoch_loss += loss
         optimizer.zero_grad()
@@ -100,7 +102,7 @@ def validate(val_dataloader, model, loss_fn, device):
             X, Y = X.to(device), Y.to(device)
             Y = torch.flatten(Y, 1)
             Y_flat = torch.flatten(Y, 1)
-            pred = model(X)
+            pred,_,__ = model(X)
             pred_flat = torch.flatten(pred, 1)
 
             val_loss += loss_fn(pred_flat*255, Y_flat*255).item()

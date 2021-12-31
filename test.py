@@ -31,7 +31,7 @@ def main():
     print(f"Using {device} device")
 
     #model = models.SimpleAutoencoder().to(device)
-    model = models.UNet(n_class=3).to(device)
+    model = models.BetaUNet().to(device)
     model.load_state_dict(torch.load(args.model_path))
     print(f"Sucesfully loaded model from {args.model_path}") 
 
@@ -54,7 +54,7 @@ def validate(val_dataloader, model, loss_fn, device):
             X, Y = X.to(device), Y.to(device)
             Y = torch.flatten(Y, 1)
             Y_flat = torch.flatten(Y, 1)
-            pred = model(X)
+            pred,_,__ = model(X)
             pred_flat = torch.flatten(pred, 1)
             val_loss += loss_fn(pred_flat*255, Y_flat*255).item()
     val_loss /= num_batches
@@ -71,7 +71,7 @@ def save_predicted_test_labels(predicted_test_label_save_dir,test_dataloader,mod
     with torch.no_grad():
         for i, (X, Y) in enumerate(test_dataloader):
             X = X.to(device)
-            pred_X = model(X)
+            pred_X,_,__ = model(X)
             flat_pred_X = pred_X.cpu().numpy().flatten()
             predictions = np.concatenate((predictions, flat_pred_X))
             pic_num = int(i*test_dataloader.batch_size)

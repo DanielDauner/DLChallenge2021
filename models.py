@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 def conv(in_channels, out_channels, kernel_size=3, stride=1, padding=1):
     return nn.Sequential(
@@ -38,6 +39,8 @@ class BetaUNet(nn.Module):
 
         self.up1 = nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2)
         self.conv_last = nn.Conv2d(64, 3, 1)
+
+        self.beta = beta
 
 
     def forward(self, x):
@@ -158,6 +161,7 @@ class Discriminator(nn.Module):
         conv4 = self.dconv_down4(conv3)
 
         return  self.classfier(conv4)
+
 
 
 

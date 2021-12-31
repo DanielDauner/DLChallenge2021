@@ -44,6 +44,7 @@ class VisualizeTraining():
             ax.set_title(f"Time left: {str(datetime.timedelta(seconds=seconds_left))}")
 
         fig.savefig(self.out_dir)
+        plt.close(fig)
 
         # https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
         # TODO: destroy plot after saving. Live plot could be used aswell.
