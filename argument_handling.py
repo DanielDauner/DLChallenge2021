@@ -4,11 +4,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_data_path',
                         type=str,
-                        default='data/train_noisy.npy',
+                        # default='data/train_noisy.npy',
+                        default='dataset/train_noisy.npy',
                         help='location of the noisy training images in numpy format', )
     parser.add_argument('--train_labels_path',
                         type=str,
-                        default='data/train_clean.npy',
+                        # default='data/train_clean.npy',
+                        default='dataset/train_clean.npy',
                         help='location of the clean target images in numpy format', )
     parser.add_argument('--test_data_path',
                         type=str,
@@ -44,10 +46,18 @@ def parse_args():
                         default=1.0)
     parser.add_argument('--epochs',
                         type=int,
-                        default=50)
+                        default=60)
     parser.add_argument('--random_seed',
                         type=int,
                         default=1337)
+    parser.add_argument('--adversarial_weight',
+                        type=float,
+                        default=0.1)
+    parser.add_argument('--beta',
+                        type=float,
+                        default=0.01)
+
+    
 
     args =   parser.parse_known_args()[0]
     print("-" * 25)

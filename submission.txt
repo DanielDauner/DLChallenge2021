@@ -1,0 +1,14 @@
+Architecture:
+Similar to U-Net but without double convolutions, modified as a variational autoencoder with a latent space of 2048. 
+5 down convolution, 5 up convolution. Tanh in the last layer.
+
+
+Training:
+Loss is a combination of a reconstruction loss (mse), and a KL Divergence Loss. 500k Images where augmentated and saved. All 500K where used for training end-to-end. 
+
+
+Paramters:
+    Learning Rate: 0.0005 
+    Epochs: 60
+
+

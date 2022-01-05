@@ -31,12 +31,12 @@ def main():
     print(f"Using {device} device")
 
     #model = models.SimpleAutoencoder().to(device)
-    model = models.BetaUNet().to(device)
+    model = models.BetaUNet2().to(device)
     model.load_state_dict(torch.load(args.model_path))
     print(f"Sucesfully loaded model from {args.model_path}") 
 
 
-    validate(test_dataloader, model, mse_loss, device)
+    #validate(val_dataloader, model, mse_loss, device)
 
     if args.predicted_test_label_save_dir:
         save_predicted_test_labels(args.predicted_test_label_save_dir, test_dataloader, model, device)

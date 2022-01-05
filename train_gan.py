@@ -33,8 +33,8 @@ def main():
     print(f"Using {device} device")
 
     #model = models.SimpleAutoencoder().to(device)
-    model_g = models.UNet().to(device)
-    # model_g.load_state_dict(torch.load("./model/unet_train.pth"))
+    model_g = models.BetaUNet2(beta=1).to(device)
+    #model_g.load_state_dict(torch.load("./model/best.pth"))
 
     model_d = models.Discriminator().to(device)
 
@@ -45,10 +45,11 @@ def main():
 
 
     #optimizer = torch.optim.SGD(model.parameters(), learning_rate, momentum=0.9)
-    #lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [], gamma=0.1)
+    lr_scheduler_g = torch.optim.lr_scheduler.MultiStepLR(optimizer_g, [150, 350], gamma=0.1)
+    lr_scheduler_d = torch.optim.lr_scheduler.MultiStepLR(optimizer_d, [150, 350], gamma=0.1)
 
     Visualize = VisualizeTraining("training.png", epochs)
-    bce_loss = torch.nn.BCELoss()
+    bce_loss = torch.nn.BCELoss(reduction='sum')
    
 
     for epoch in range(epochs):
@@ -61,6 +62,9 @@ def main():
 
         val_loss = validate(val_dataloader, model_g, mse_loss, device)
         Visualize.update(train_loss, val_loss, epoch)
+
+        lr_scheduler_d.step()
+        lr_scheduler_g.step()
 
         sys.stdout.flush()
         sys.stderr.flush()
@@ -77,109 +81,74 @@ def train_one_epoch(dataloader, model_g, model_d, mse_loss, bce_loss, optimizer_
     model_d.train()
     epoch_loss_d = 0.0
     epoch_loss_g = 0.0
-    
+    epoch_loss_gr = 0.0
+    epoch_loss_ga = 0.0
+    Tensor = torch.cuda.FloatTensor
 
     for batch_number, (X, Y) in enumerate(dataloader):
+
         X, Y = X.to(device), Y.to(device)
-        optimizer_d.zero_grad()
-        
-        # (1) Train model_d on all-real data
-        model_g.eval()
-        model_d.train()
 
-        model_d.zero_grad()
-        output_d_real = model_d(Y)
-        
-        real_label = torch.ones(output_d_real.shape, device=device)
-        fake_label = torch.zeros(output_d_real.shape, device=device)
-        
-        err_d_real = bce_loss(output_d_real, real_label)
-        err_d_real.backward()
 
-        # (2) Train model_d on all-fake data
-        
-        fake_Y = model_g(X)
-        output_d_fake = model_d(fake_Y)
-        err_d_fake = bce_loss(output_d_fake, fake_label)
-        err_d = (err_d_fake+err_d_real)/2.
-
-        err_d_fake.backward()
-        epoch_loss_d += err_d
-
-        optimizer_d.step()
+        valid = torch.ones((X.shape[0],1), dtype=torch.float32, requires_grad=False, device=device)
+        fake = torch.zeros((X.shape[0],1), dtype=torch.float32, requires_grad=False, device=device)
 
         # (3) Train model_g on all-fake data
-       
         model_g.train()
         model_d.eval()
 
         optimizer_g.zero_grad()
 
-        model_g.zero_grad()
-        #_, real_features = model_g(Y,return_feature=True)
-        fake_Y = model_g(X)
-        output_d = model_d(fake_Y)
-        err_g = 1000*bce_loss(output_d, real_label)\
-            +mse_loss(torch.flatten(255*fake_Y, 1), torch.flatten(255*Y, 1))#+1000*mse_loss(torch.flatten(fake_features, 1), torch.flatten(real_features, 1))
-        epoch_loss_g += err_g
+        fake_Y, mu, var = model_g(X)
+        with torch.no_grad():
+            output_d = model_d(fake_Y)
+
+        adversarial_loss_g = bce_loss(output_d, valid)
+        epoch_loss_ga += adversarial_loss_g.item()
+
+        reconstruction_loss,_,__ = model_g.loss(fake_Y, Y, mu, var)
+        epoch_loss_gr += reconstruction_loss.item()
+        
+        err_g = reconstruction_loss+adversarial_loss_g
+        epoch_loss_g += err_g.item()
         
         err_g.backward()
         optimizer_g.step()
 
+        
+
+
+        # (1) Train model_d on all-real data
+        model_g.eval()
+        model_d.train()
+
+        optimizer_d.zero_grad()
+
+        output_d_real = model_d(Y)
+        err_d_real = bce_loss(output_d_real, valid)
+        
+
+        # (2) Train model_d on all-fake data
+        with torch.no_grad():
+            fake_Y,_,__ = model_g(X)
+        
+        output_d_fake = model_d(fake_Y)
+        err_d_fake = bce_loss(output_d_fake, fake)
+        err_d = (err_d_fake+err_d_real)/2.
+
+        err_d.backward()
+        epoch_loss_d += err_d.item()
+
+        optimizer_d.step()
+
     train_loss_d = epoch_loss_d/len(dataloader)
     train_loss_g = epoch_loss_g/len(dataloader)
-    print(f"Training loss D:{train_loss_d:>7f}, G:{train_loss_g:>7f}")
-    return train_loss_g.item()
-
-# def train_d(optimizer_d, model_d, Y, Y_fake):
-#     # (1) Train model_d on all-real data
-#     #model_d.zero_grad()
-#     output_d_real = model_d(Y)
-    
-#     real_label = torch.zeros(output_d_real.shape, device=device)
-#     fake_label = torch.ones(output_d_real.shape, device=device)
-    
-#     err_d_real = bce_loss(output_d_real, real_label)
-#     #err_d_real.backward(retain_graph=True)
-#     err_d.backward()
-#     fake_Y = model_g(X)
-#     output_d_fake = model_d(fake_Y)
-#     err_d_fake = bce_loss(output_d_fake, fake_label)
-#     err_d = err_d_fake+err_d_real
-
-#     err_d.backward()
-#     epoch_loss_d += err_d
-
-#     optimizer_d.step()
-
-#     # (2) Train model_g on all-fake data
-#     #model_g.zero_grad()
-#     output_d = model_d(fake_Y)
-#     err_g = bce_loss(output_d, real_label)\
-#                 + mse_loss(torch.flatten(fake_Y, 1), torch.flatten(Y, 1))
-#     epoch_loss_g += err_g
+    train_loss_ga = epoch_loss_ga/len(dataloader)
+    train_loss_gr = epoch_loss_gr/len(dataloader)
+    print(f"Training loss D: {train_loss_d:>7f}, G: {train_loss_g:>7f} (R: {train_loss_gr:>7f}, A:{train_loss_ga:>7f})")
+    return train_loss_g
 
 
-
-
-# def train_one_epoch(dataloader, model, loss_fn, optimizer, device):
-#     model.train()
-#     epoch_loss= 0.0
-#     for batch_number, (X, Y) in enumerate(dataloader):
-#         X, Y = X.to(device), Y.to(device)
-
-#         Y_flat = torch.flatten(Y,1)
-#         pred = model(X)
-#         pred_flat = torch.flatten(pred, 1)
-        
-#         loss = loss_fn(pred_flat*255, Y_flat*255) # to be consistent with the kaggle loss.
-#         epoch_loss += loss
-#         optimizer.zero_grad()
-#         loss.backward()
-#         optimizer.step()
-#     train_loss = epoch_loss/len(dataloader)
-#     print(f"Training loss: {train_loss:>7f}")
-#     return train_loss.item()
 
 
 def validate(val_dataloader, model, loss_fn, device):
@@ -191,7 +160,7 @@ def validate(val_dataloader, model, loss_fn, device):
             X, Y = X.to(device), Y.to(device)
             Y = torch.flatten(Y, 1)
             Y_flat = torch.flatten(Y, 1)
-            pred = model(X)
+            pred,_,__ = model(X)
             pred_flat = torch.flatten(pred, 1)
 
             val_loss += loss_fn(pred_flat*255, Y_flat*255).item()
