@@ -1,2 +1,3 @@
-# Deep Learning Challenge 21/22
+# Deep Learning Challenge 2021
 
+Code of a Denoising Auto-Encoder which won the Deep Learning Challenge 2021 at the University Tübingen. 
