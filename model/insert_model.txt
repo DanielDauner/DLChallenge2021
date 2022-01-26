@@ -1,0 +1,3 @@
+model.pth too large for github. 
+
+Contact us for the pretrained model.
