@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 from util import mse_loss, VisualizeTraining
 
 
-torch.backends.cudnn.deterministic = True
+
+# torch.backends.cudnn.deterministic = True
 
 def main():
 
@@ -20,31 +21,35 @@ def main():
     train_dataloader, val_dataloader, test_dataloader = \
         data_handling.get_dataloaders(args.batch_size,args.validation_fraction,
                                       args.train_data_path,args.train_labels_path,args.test_data_path)
+
+    
     np.random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
 
     learning_rate = args.learning_rate
     epochs = args.epochs
     bootstrap = args.bootstrap
-
+    save_model_epoch = 1
+    save_model_path = f"./model/epoch/"
+ 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
     print(f"Using {device} device")
-
-    #model = models.SimpleAutoencoder().to(device)
-    model = models.BetaUNet(beta=2).to(device)
-    #model.load_state_dict(torch.load("./model/unet.pth"))
+    
+    # model = models.BetaUNet2(beta=args.beta).to(device)
+    model = models.BetaUNet2Large(beta=args.beta).to(device)
+    model.load_state_dict(torch.load("./model/model_pretrain.pth"))
     
     # TODO: enable pretraining
     #if args.pretrain_path:
 
-    print(model)
+    # print(model)
     optimizer = torch.optim.Adam(model.parameters(), learning_rate)
-    #optimizer = torch.optim.SGD(model.parameters(), learning_rate, momentum=0.9)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [], gamma=0.1)
 
-    Visualize = VisualizeTraining("training.png", epochs)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [40], gamma=0.1)
+
+    Visualize = VisualizeTraining(f"/home/daniel/Dropbox/DeepLearningResults/training.png", epochs)
    
 
     for epoch in range(epochs):
@@ -55,12 +60,22 @@ def main():
         
         print("Time per Epoch: ", time.time()-start)
 
+        print(f"Training mse:\t {train_loss:>7f}")
+        
         val_loss = validate(val_dataloader, model, mse_loss, device)
+        print(f"Validation mse:\t {val_loss:>7f}")
+        print("-" * 50)
+
         Visualize.update(train_loss, val_loss, epoch)
 
         sys.stdout.flush()
         sys.stderr.flush()
         lr_scheduler.step()
+
+        if epoch % save_model_epoch == 0:
+            torch.save(model.state_dict(), os.path.join(save_model_path, f"model_{epoch + 1}_{int(val_loss)}.pth"))
+            print(f"Sucesfully saved model at epoch {epoch + 1}")    
+
     
     if args.model_path:
         torch.save(model.state_dict(), args.model_path)
@@ -72,25 +87,21 @@ def main():
 
 def train_one_epoch(dataloader, model, loss_fn, optimizer, device):
     model.train()
-    epoch_loss= 0.0
+    epoch_mse_loss = 0.0
     for batch_number, (X, Y) in enumerate(dataloader):
         X, Y = X.to(device), Y.to(device)
 
-        Y_flat = torch.flatten(Y,1)
-        pred, mu, var = model(X)
-        pred_flat = torch.flatten(pred, 1)
-        
-        #loss = loss_fn(pred_flat*255, Y_flat*255) # to be consistent with the kaggle loss.
+        pred, mu, logvar = model(X)
+        loss, rec, kl = model.loss(pred, Y, mu, logvar)
 
-        loss = model.loss(pred, Y, mu, var)
-        #print(pred_flat)
-        epoch_loss += loss
+        epoch_mse_loss += loss_fn(torch.flatten(pred, 1)*255, torch.flatten(Y, 1)*255).item()
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    train_loss = epoch_loss/len(dataloader)
-    print(f"Training loss: {train_loss:>7f}")
-    return train_loss.item()
+        
+    return epoch_mse_loss/len(dataloader)
+
 
 
 def validate(val_dataloader, model, loss_fn, device):
@@ -107,8 +118,7 @@ def validate(val_dataloader, model, loss_fn, device):
 
             val_loss += loss_fn(pred_flat*255, Y_flat*255).item()
     val_loss /= num_batches
-    print(f"Validation loss: {val_loss:>7f} ")
-    print("-" * 50)
+    
     return val_loss
 
 

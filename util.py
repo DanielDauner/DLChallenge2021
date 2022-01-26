@@ -41,7 +41,7 @@ class VisualizeTraining():
         ax.legend()
         
         if current_epoch != 0:
-            ax.set_title(f"Time left: {str(datetime.timedelta(seconds=seconds_left))}")
+            ax.set_title(f"Time left: {str(datetime.timedelta(seconds=seconds_left))} Scores: {round(self.training_loss[-1],2)} / {round(self.validation_loss[-1],2)}")
 
         fig.savefig(self.out_dir)
         plt.close(fig)

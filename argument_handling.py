@@ -4,12 +4,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_data_path',
                         type=str,
-                        # default='data/train_noisy.npy',
-                        default='dataset/train_noisy.npy',
+                        default='./dataset',
                         help='location of the noisy training images in numpy format', )
     parser.add_argument('--train_labels_path',
                         type=str,
-                        # default='data/train_clean.npy',
                         default='dataset/train_clean.npy',
                         help='location of the clean target images in numpy format', )
     parser.add_argument('--test_data_path',
@@ -28,16 +26,12 @@ def parse_args():
                         type=str,
                         default="model/model.pth",
                         help='path to a output model dict dir', )
-    parser.add_argument('--pretrain_path',
-                        type=str,
-                        default=None,
-                        help='path to a pretrained model', )
     parser.add_argument('--batch_size',
                         type=int,
                         default=64) # 64
     parser.add_argument('--validation_fraction',
                         type=float,
-                        default=0.1) 
+                        default=0.05) 
     parser.add_argument('--learning_rate',
                         type=float,
                         default=0.0005)
@@ -46,7 +40,7 @@ def parse_args():
                         default=1.0)
     parser.add_argument('--epochs',
                         type=int,
-                        default=60)
+                        default=25)
     parser.add_argument('--random_seed',
                         type=int,
                         default=1337)
@@ -55,7 +49,8 @@ def parse_args():
                         default=0.1)
     parser.add_argument('--beta',
                         type=float,
-                        default=0.01)
+                        default=0.0025)
+
 
     
 
